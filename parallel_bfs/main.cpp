@@ -125,6 +125,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < edge_cnt; ++i) {
         fin >> from_node >> to_node;
         graph[from_node].push_back(to_node);
+        graph[to_node].push_back(from_node);
     }
 
     // output colors
@@ -156,6 +157,7 @@ int main(int argc, char *argv[]) {
         // sequential 
         for (int i = 0; i < node_cnt; ++i) {
             if (colors[i] == -1) {
+                colors[i] = -2; // -2 indicates that it's already in the queue
                 bfs_sequential(i, colors, graph);
             }
         }
