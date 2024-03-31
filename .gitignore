@@ -1,3 +1,4 @@
 /inputs/*.txt
+/outputs/*.txt
 *.o
 ompbfs
