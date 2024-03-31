@@ -20,7 +20,7 @@ void write_output(const std::string& output_filename, const std::vector<int>& co
         exit(EXIT_FAILURE);
     }
     for (size_t i = 0; i < colors.size(); ++i) {
-        out_file << i << " ";
+        out_file << colors[i] << " ";
     }
 }
 
