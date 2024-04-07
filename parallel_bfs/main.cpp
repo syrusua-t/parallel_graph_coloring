@@ -35,12 +35,12 @@ void bfs_sequential(int node, std::vector<int>& colors, const std::vector<std::v
     while (!frontier.empty()) {
         int n = frontier.front();
         frontier.pop();
-        int next_color = 0;
+        int next_color = 1;
         std::set<int> seen;
         for (int nbr : graph[n]) {
-            if (colors[nbr] == -1) {
+            if (colors[nbr] == 0) {
                 frontier.push(nbr);
-                colors[nbr] = -2; // -2 indicates that it's already in the queue
+                colors[nbr] = -1; // -1 indicates that it's already in the queue
             }
             seen.insert(colors[nbr]);
             while (seen.count(next_color)) {
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
     }
 
     // output colors
-    std::vector<int> colors(node_cnt, -1);
+    std::vector<int> colors(node_cnt, 0);
 
     const auto compute_start = std::chrono::steady_clock::now();
     
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
         for (thread_id = 0; thread_id < num_threads; ++thread_id) {
             for (idx = thread_id; idx < colors.size(); ++idx) {
                 // no lock here, optimistic
-                if (colors[idx] == -1) {
+                if (colors[idx] == 0) {
                     bfs_parallel(idx, colors, locks, graph);
                 }
             }
@@ -158,8 +158,8 @@ int main(int argc, char *argv[]) {
     } else {
         // sequential 
         for (int i = 0; i < node_cnt; ++i) {
-            if (colors[i] == -1) {
-                colors[i] = -2; // -2 indicates that it's already in the queue
+            if (colors[i] == 0) {
+                colors[i] = -1; // -1 indicates that it's already in the queue
                 bfs_sequential(i, colors, graph);
             }
         }
