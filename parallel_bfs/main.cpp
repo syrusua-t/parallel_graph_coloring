@@ -24,9 +24,50 @@ void write_output(const std::string& output_filename, const std::vector<int>& co
     }
 }
 
-void bfs_parallel(int node, std::vector<int>& colors, std::vector<omp_lock_t>& locks,
+/* Explanation of colors:
+ > 0 : colored
+ = 0 : not assigned
+ < 0 : -x => assigned to thead x but not yet colored
+*/
+void bfs_parallel(int thread_id, int node, std::vector<int>& colors, std::vector<omp_lock_t>& locks,
     const std::vector<std::vector<int>>& graph) {
-    // TODO
+    std::queue<int> frontier;
+    frontier.push(node);
+    while (!frontier.empty()) {
+        int n = frontier.front();
+        frontier.pop();
+        int next_color = 1;
+        std::set<int> seen;
+        bool can_color = true;
+        for (int nbr : graph[n]) {
+            omp_set_lock(&locks[nbr]);
+            if (colors[nbr] == 0) {
+                // not assigned, assign to self, 
+                frontier.push(nbr);
+                colors[nbr] = -thread_id;
+            } else if (colors[nbr] > 0) {
+                // already colored
+                seen.insert(colors[nbr]);
+            } else {
+                // assigned to another thread, break ties by comparing thread_id
+                if (-colors[nbr] < thread_id) {
+                    // give up coloring current node, come back later
+                    frontier.push(n);
+                    can_color = false;
+                    omp_unset_lock(&locks[nbr]);
+                    break;
+                }
+                // otherwise, ignore this node
+            }
+            while (seen.count(next_color)) {
+                next_color++;
+            }
+            omp_unset_lock(&locks[nbr]);
+        }
+        if (can_color) {
+            colors[n] = next_color;
+        }
+    }
 }
 
 void bfs_sequential(int node, std::vector<int>& colors, const std::vector<std::vector<int>>& graph) {
@@ -146,12 +187,17 @@ int main(int argc, char *argv[]) {
         int thread_id;
         size_t idx;
         #pragma omp parallel for default(shared)\
-            private(thread_id, colors, locks, idx, graph)
+            shared (colors, locks, graph)\
+            private(thread_id, idx)
         for (thread_id = 0; thread_id < num_threads; ++thread_id) {
-            for (idx = thread_id; idx < colors.size(); ++idx) {
-                // no lock here, optimistic
+            for (idx = thread_id; idx < colors.size(); idx += num_threads) {
+                omp_set_lock(&locks[idx]);
                 if (colors[idx] == 0) {
-                    bfs_parallel(idx, colors, locks, graph);
+                    colors[idx] = -thread_id;
+                    omp_unset_lock(&locks[idx]);
+                    bfs_parallel(thread_id, idx, colors, locks, graph);
+                } else {
+                    omp_unset_lock(&locks[idx]);
                 }
             }
         }
