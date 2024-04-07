@@ -131,6 +131,8 @@ int main(int argc, char *argv[]) {
     // output colors
     std::vector<int> colors(node_cnt, -1);
 
+    const auto compute_start = std::chrono::steady_clock::now();
+    
     if (mode == "p") {
         // parallel
         // global locks
@@ -162,6 +164,10 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+        std::chrono::steady_clock::now() - compute_start).count();
+    std::cout << "Computation time (sec): " <<  "\033[33m" << compute_time << "\033[0m\n";
 
     write_output(output_filename, colors);
     return 0;

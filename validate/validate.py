@@ -46,7 +46,7 @@ def main(args):
     if (conflict > 0):
         print("validation \033[1;31m FAILED\033[0m\n#conflicts:", conflict)
     else:
-        print("validation \033[1;32mSUCCEEDED\033[0m\n#colors used:", num_colors)
+        print("validation \033[1;32mSUCCEEDED\033[0m\n#colors used:\033[1;94m", num_colors, "\033[0m")
 
 if __name__ == '__main__':
     main(parse_args())
