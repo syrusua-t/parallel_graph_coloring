@@ -2,4 +2,5 @@
 /outputs/*.txt
 *.o
 ompbfs
+cudajp
 *.sh

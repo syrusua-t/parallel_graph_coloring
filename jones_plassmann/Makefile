@@ -1,4 +1,4 @@
-EXECUTABLE := jpcuda
+EXECUTABLE := cudajp
 
 CU_FILES   := jonesPlassmann.cu
 
