@@ -31,6 +31,7 @@ dirs:
 
 clean:
 		rm -rf $(OBJDIR) *.ppm *~ $(EXECUTABLE)
+		rm tmp
 
 $(EXECUTABLE): dirs $(OBJS)
 		$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)

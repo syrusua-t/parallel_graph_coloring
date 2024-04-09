@@ -11,13 +11,15 @@
 
 #include <unistd.h>
 
-void write_output(const std::string& output_filename, const std::vector<int>& colors) {
+void jones_plassmann(int* colors, const std::vector<std::vector<int>>& graph);
+
+void write_output(const std::string& output_filename, int* colors, size_t num_colors) {
     std::ofstream out_file(output_filename, std::fstream::out);
     if (!out_file) {
         std::cerr << "\033[1;31mUnable to open file for output: " << output_filename << "\033[0m\n";
         exit(EXIT_FAILURE);
     }
-    for (size_t i = 0; i < colors.size(); ++i) {
+    for (size_t i = 0; i < num_colors; ++i) {
         out_file << colors[i] << " ";
     }
 }
@@ -96,14 +98,17 @@ int main(int argc, char *argv[]) {
     }
 
     // output colors
-    std::vector<int> colors(node_cnt, 0);
+    int colors[node_cnt];
+    memset(colors, 0, sizeof(colors));
 
     const auto compute_start = std::chrono::steady_clock::now();
+
+    jones_plassmann(colors, graph);
 
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - compute_start).count();
     std::cout << "Computation time (sec): " <<  "\033[33m" << compute_time << "\033[0m\n";
 
-    write_output(output_filename, colors);
+    write_output(output_filename, colors, node_cnt);
     return 0;
 }

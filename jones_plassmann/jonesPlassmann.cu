@@ -1,10 +1,36 @@
 #include <stdio.h>
+#include <vector>
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_functions.h>
+#include <thrust/count.h>
+
+#define THREADS_PER_BLOCK 256
+
+// assign random numbers to each node
+int* init_rank(int node_cnt) {
+    // TODO
+    return nullptr;
+}
+
+__global__ void jones_plassmann_kernel() {
+    // TODO
+}
+
+void jones_plassmann(int* colors, const std::vector<std::vector<int>>& graph) {
+    int node_cnt = graph.size();
+    int num_blocks = (node_cnt + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int* rank = init_rank(node_cnt);
+
+    for (int i = 0; i < node_cnt; ++i) {
+        jones_plassmann_kernel<<<num_blocks, THREADS_PER_BLOCK>>>();
+        int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
+        if (uncolored == 0) break;
+    }
+}
 
 
 void printCudaInfo() {
