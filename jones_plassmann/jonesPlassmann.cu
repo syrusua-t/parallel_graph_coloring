@@ -36,7 +36,6 @@ void jones_plassmann(int* colors, const std::vector<std::vector<int>>& graph) {
     }
 }
 
-
 void printCudaInfo() {
     int deviceCount = 0;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);

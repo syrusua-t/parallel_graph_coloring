@@ -12,6 +12,12 @@
 #include <unistd.h>
 
 void jones_plassmann(int* colors, const std::vector<std::vector<int>>& graph);
+void printCudaInfo();
+
+
+void compress(const std::vector<std::vector<int>>&& graph, int* nbrs_start, int* nbrs) {
+    // TODO
+}
 
 void write_output(const std::string& output_filename, int* colors, size_t num_colors) {
     std::ofstream out_file(output_filename, std::fstream::out);
@@ -26,31 +32,32 @@ void write_output(const std::string& output_filename, int* colors, size_t num_co
 
 int main(int argc, char *argv[]) {
     std::string input_filename;
-    std::string mode = "p";
     std::string output_filename;
+    bool verbose = false;
     int opt;
-    while ((opt = getopt(argc, argv, "f:m:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:o:v")) != -1) {
         switch (opt) {
         case 'f':
             input_filename = optarg;
             break;
-        case 'm':
-            mode = optarg;
-            break;
         case 'o':
             output_filename = optarg;
             break;
+        case 'v':
+            verbose = true;
+            break;
         default:
-            std::cerr << "Usage: " << argv[0] << " -f input_filename -m s/p\n";
+            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v)\n";
             exit(EXIT_FAILURE);
         }
     }
     // Check if required options are provided
-    if (empty(input_filename) || (mode != "s" && mode != "p")) {
-        std::cerr << "Usage: " << argv[0] << " -f input_filename -m s/p\n";
+    if (empty(input_filename) ) {
+        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v)\n";
         exit(EXIT_FAILURE);
     }
     std::cout << "Input File: " << input_filename << std::endl;
+    std::cout << "Output File: " << output_filename << std::endl;
     std::ifstream fin(input_filename);
     if (!fin) {
         std::cerr << "Unable to open file: " << input_filename << ".\n";
@@ -100,7 +107,13 @@ int main(int argc, char *argv[]) {
     // output colors
     int colors[node_cnt];
     memset(colors, 0, sizeof(colors));
+    // compressed graph
+    int* nbrs_start;
+    int* nbrs;
+    compress(std::move(graph), nbrs_start, nbrs);
 
+    if (verbose) printCudaInfo();
+    
     const auto compute_start = std::chrono::steady_clock::now();
 
     jones_plassmann(colors, graph);
