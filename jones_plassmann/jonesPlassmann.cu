@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <vector>
+#include <cstdlib>
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -12,8 +13,11 @@
 
 // assign random numbers to each node
 int* init_rank(int node_cnt) {
-    // TODO
-    return nullptr;
+    int* rank = (int*) malloc(sizeof(int) * node_cnt);
+    for (int i = 0; i < node_cnt; ++i) {
+        rank[i] = rand();
+    }
+    return rank;
 }
 
 __global__ void jones_plassmann_kernel() {
