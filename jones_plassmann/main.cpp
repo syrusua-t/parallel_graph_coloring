@@ -16,7 +16,16 @@ void printCudaInfo();
 
 
 void compress(const std::vector<std::vector<int>>&& graph, int* nbrs_start, int* nbrs) {
-    // TODO
+    int current_start = 0;
+    int current_idx = 0;
+    for (size_t node = 0; node < graph.size(); ++node) {
+        nbrs_start[node] = current_start;
+        current_start += graph[node].size();
+        for (int nbr : graph[node]) {
+            nbrs[current_idx++] = nbr;
+        }
+    }
+    nbrs_start[graph.size()] = current_start;
 }
 
 void write_output(const std::string& output_filename, int* colors, size_t num_colors) {
@@ -108,8 +117,8 @@ int main(int argc, char *argv[]) {
     int colors[node_cnt];
     memset(colors, 0, sizeof(colors));
     // compressed graph
-    int* nbrs_start;
-    int* nbrs;
+    int* nbrs_start = (int*)malloc(sizeof(int) * node_cnt + 1);
+    int* nbrs = (int*)malloc(sizeof(int) * edge_cnt * 2);
     compress(std::move(graph), nbrs_start, nbrs);
 
     if (verbose) printCudaInfo();
