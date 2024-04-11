@@ -37,7 +37,7 @@ __global__ void jones_plassmann_kernel(int cur_color, int node_cnt,
     for (int nbr_idx = nbrs_start[node]; nbr_idx < nbrs_start[node + 1]; ++nbr_idx) {
         int nbr = nbrs[nbr_idx];
         // ignore colored neighbor
-        if (colors[nbr] != 0) {
+        if (colors[nbr] != 0 && colors[nbr] != cur_color) {
             continue;
         }
         if (rank[node] <= rank[nbr]) is_max = false;
