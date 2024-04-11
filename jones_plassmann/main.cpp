@@ -11,7 +11,7 @@
 
 #include <unistd.h>
 
-void jones_plassmann(int* colors, const std::vector<std::vector<int>>& graph);
+void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs);
 void printCudaInfo();
 
 
@@ -114,18 +114,18 @@ int main(int argc, char *argv[]) {
     }
 
     // output colors
-    int colors[node_cnt];
-    memset(colors, 0, sizeof(colors));
+    int* colors = (int*)malloc(sizeof(int) * node_cnt);
+    memset(colors, 0, sizeof(int) * node_cnt);
     // compressed graph
-    int* nbrs_start = (int*)malloc(sizeof(int) * node_cnt + 1);
     int* nbrs = (int*)malloc(sizeof(int) * edge_cnt * 2);
+    int* nbrs_start = (int*)malloc(sizeof(int) * node_cnt + 1);
     compress(std::move(graph), nbrs_start, nbrs);
 
     if (verbose) printCudaInfo();
     
     const auto compute_start = std::chrono::steady_clock::now();
 
-    jones_plassmann(colors, graph);
+    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs);
 
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - compute_start).count();

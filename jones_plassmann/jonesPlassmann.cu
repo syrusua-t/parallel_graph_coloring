@@ -24,16 +24,35 @@ __global__ void jones_plassmann_kernel() {
     // TODO
 }
 
-void jones_plassmann(int* colors, const std::vector<std::vector<int>>& graph) {
-    int node_cnt = graph.size();
+void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs) {
+    // initialization
     int num_blocks = (node_cnt + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int* rank = init_rank(node_cnt);
+
+    // allcoate memory
+    int* device_nbrs;
+    int* device_nbrs_start;
+    int* device_colors;
+    cudaMalloc(&device_nbrs, edge_cnt * 2);
+    cudaMalloc(&device_nbrs_start, node_cnt + 1);
+    cudaMalloc(&device_colors, node_cnt);
+    // copy input to device
+    cudaMemcpy(device_colors, colors, node_cnt, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_nbrs, nbrs, edge_cnt * 2, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_nbrs_start, nbrs_start, node_cnt + 1, cudaMemcpyHostToDevice);
 
     for (int i = 0; i < node_cnt; ++i) {
         jones_plassmann_kernel<<<num_blocks, THREADS_PER_BLOCK>>>();
         int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
         if (uncolored == 0) break;
     }
+
+    // copy result back
+    cudaMemcpy(colors, device_colors, node_cnt, cudaMemcpyDeviceToHost);
+    // free memory
+    cudaFree(device_nbrs);
+    cudaFree(device_nbrs_start);
+    cudaFree(device_colors);
 }
 
 void printCudaInfo() {
