@@ -21,12 +21,10 @@ void check_error(std::string s) {
 }
 
 // assign random numbers to each node
-int* init_rank(int node_cnt) {
-    int* rank = (int*) malloc(sizeof(int) * node_cnt);
+void init_rank(int* rank, int node_cnt) {
     for (int i = 0; i < node_cnt; ++i) {
         rank[i] = rand();
     }
-    return rank;
 }
 
 __global__ void jones_plassmann_kernel(int cur_color, int node_cnt, 
@@ -50,27 +48,28 @@ __global__ void jones_plassmann_kernel(int cur_color, int node_cnt,
 void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs) {
     // initialization
     int num_blocks = (node_cnt + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    int* rank = init_rank(node_cnt);
+    int* rank = (int*)malloc(sizeof(int) * node_cnt); 
+    init_rank(rank, node_cnt);
 
     // allcoate memory
     int* device_nbrs;
     int* device_nbrs_start;
     int* device_colors;
     int* device_rank;
-    cudaMalloc(&device_nbrs, edge_cnt * 2);
-    cudaMalloc(&device_nbrs_start, node_cnt + 1);
-    cudaMalloc(&device_colors, node_cnt);
-    cudaMalloc(&device_rank, node_cnt);
+    cudaMalloc(&device_nbrs, sizeof(int) * (edge_cnt * 2));
+    cudaMalloc(&device_nbrs_start, sizeof(int) * (node_cnt + 1));
+    cudaMalloc(&device_colors, sizeof(int) * node_cnt);
+    cudaMalloc(&device_rank, sizeof(int) * node_cnt);
     // copy input to device
-    cudaMemcpy(device_rank, rank, node_cnt, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_colors, colors, node_cnt, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_nbrs, nbrs, edge_cnt * 2, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_nbrs_start, nbrs_start, node_cnt + 1, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_rank, rank, sizeof(int) * node_cnt, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_colors, colors, sizeof(int) * node_cnt, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_nbrs, nbrs, sizeof(int) * (edge_cnt * 2), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_nbrs_start, nbrs_start, sizeof(int) * (node_cnt + 1), cudaMemcpyHostToDevice);
 
     for (int cur_color = 1; cur_color <= node_cnt; ++cur_color) {
         jones_plassmann_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
             (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, device_rank);
-        cudaMemcpy(colors, device_colors, node_cnt, cudaMemcpyDeviceToHost);
+        cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
         int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
         if (uncolored == 0) break;
     }
