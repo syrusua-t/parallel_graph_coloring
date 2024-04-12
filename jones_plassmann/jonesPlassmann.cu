@@ -109,6 +109,12 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
                 if (uncolored == 0) break;
             }
             break;
+        case MultiHash:
+            // TODO
+            break;
+        default:
+            printf("\033[1;31m ERROR: Unrecognized coloring mode!\033[0m\n");
+            exit(1);
     }
         
     

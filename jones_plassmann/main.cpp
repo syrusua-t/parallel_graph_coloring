@@ -44,9 +44,10 @@ void write_output(const std::string& output_filename, int* colors, size_t num_co
 int main(int argc, char *argv[]) {
     std::string input_filename;
     std::string output_filename;
+    std::string mode = "basic";
     bool verbose = false;
     int opt;
-    while ((opt = getopt(argc, argv, "f:o:v")) != -1) {
+    while ((opt = getopt(argc, argv, "f:o:vm:")) != -1) {
         switch (opt) {
         case 'f':
             input_filename = optarg;
@@ -57,14 +58,17 @@ int main(int argc, char *argv[]) {
         case 'v':
             verbose = true;
             break;
+        case 'm':
+            mode = optarg;
+            break;
         default:
-            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v)\n";
+            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash]\n";
             exit(EXIT_FAILURE);
         }
     }
     // Check if required options are provided
-    if (empty(input_filename) ) {
-        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v)\n";
+    if (empty(input_filename) || (mode != "basic" && mode != "minmax" && mode != "multihash")) {
+        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash]\n";
         exit(EXIT_FAILURE);
     }
     std::cout << "Input File: " << input_filename << std::endl;
@@ -105,6 +109,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Graph name: \u001b[35m\u001b[1m" << graph_name << "\033[0m" << std::endl;
     std::cout << "Number of nodes: " << node_cnt << std::endl;
     std::cout << "Number of edges: " << edge_cnt << std::endl;
+    std::cout << "Coloring mode: \u001b[35m\u001b[1m" << mode << "\033[0m" << std::endl;
 
     // extract edges
     std::vector<std::vector<int>> graph(node_cnt);
@@ -123,11 +128,14 @@ int main(int argc, char *argv[]) {
     int* nbrs_start = (int*)malloc(sizeof(int) * node_cnt + 1);
     compress(std::move(graph), nbrs_start, nbrs);
 
+    Mode m = Basic;
     if (verbose) printCudaInfo();
+    if (mode == "minmax") m = MinMax;
+    if (mode == "multihash") m = MultiHash;
     
     const auto compute_start = std::chrono::steady_clock::now();
 
-    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, MinMax);
+    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, m);
 
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - compute_start).count();

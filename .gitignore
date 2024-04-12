@@ -3,4 +3,4 @@
 *.o
 ompbfs
 cudajp
-*.sh
+test.sh
