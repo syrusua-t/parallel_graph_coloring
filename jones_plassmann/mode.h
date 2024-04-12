@@ -1,3 +1,4 @@
 enum Mode {
     Basic,
+    MinMax,
 };

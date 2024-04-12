@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     
     const auto compute_start = std::chrono::steady_clock::now();
 
-    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, Basic);
+    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, MinMax);
 
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - compute_start).count();

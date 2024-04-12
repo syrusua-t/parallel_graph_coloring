@@ -47,6 +47,27 @@ __global__ void jones_plassmann_basic_kernel(int cur_color, int node_cnt,
     if (is_max) colors[node] = cur_color;
 }
 
+__global__ void jones_plassmann_minmax_kernel(int cur_color, int node_cnt, 
+    int* colors, int *nbrs_start, int *nbrs, int* rank) {
+    int node = blockIdx.x * blockDim.x + threadIdx.x;
+    // already colored, skip
+    if (node >= node_cnt || colors[node] != 0) return;
+    
+    bool is_max = true;
+    bool is_min = true;
+    for (int nbr_idx = nbrs_start[node]; nbr_idx < nbrs_start[node + 1]; ++nbr_idx) {
+        int nbr = nbrs[nbr_idx];
+        // ignore colored neighbor
+        if (colors[nbr] != 0 && colors[nbr] != cur_color && colors[nbr] != cur_color + 1) {
+            continue;
+        }
+        if (rank[node] <= rank[nbr]) is_max = false;
+        if (rank[node] >= rank[nbr]) is_min = false;
+    }
+    if (is_max) colors[node] = cur_color;
+    if (is_min) colors[node] = cur_color + 1;
+}
+
 void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode) {
     // initialization
     int num_blocks = (node_cnt + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
@@ -68,17 +89,28 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
     cudaMemcpy(device_nbrs, nbrs, sizeof(int) * (edge_cnt * 2), cudaMemcpyHostToDevice);
     cudaMemcpy(device_nbrs_start, nbrs_start, sizeof(int) * (node_cnt + 1), cudaMemcpyHostToDevice);
 
-    for (int cur_color = 1; cur_color <= node_cnt; ++cur_color) {
-        switch (mode) {
-            case Basic:
-                jones_plassmann_basic_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
-                (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, device_rank);
-                break;                
-        }
-        cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
-        int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
-        if (uncolored == 0) break;
+    
+    switch (mode) {
+        case Basic:
+            for (int cur_color = 1; cur_color <= node_cnt; ++cur_color) {
+                    jones_plassmann_basic_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
+                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, device_rank);
+                    cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
+                int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
+                if (uncolored == 0) break;
+            }
+            break;
+        case MinMax:
+            for (int cur_color = 1; cur_color <= 2 * node_cnt; cur_color += 2) {
+                    jones_plassmann_minmax_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
+                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, device_rank);
+                    cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
+                int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
+                if (uncolored == 0) break;
+            }
+            break;
     }
+        
     
     // free memory
     cudaFree(device_rank);
