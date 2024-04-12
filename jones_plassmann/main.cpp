@@ -11,7 +11,9 @@
 
 #include <unistd.h>
 
-void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs);
+#include "mode.h"
+
+void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode);
 void printCudaInfo();
 
 
@@ -125,7 +127,7 @@ int main(int argc, char *argv[]) {
     
     const auto compute_start = std::chrono::steady_clock::now();
 
-    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs);
+    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, Basic);
 
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - compute_start).count();

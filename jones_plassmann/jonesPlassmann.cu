@@ -9,6 +9,8 @@
 #include <driver_functions.h>
 #include <thrust/count.h>
 
+#include "mode.h"
+
 #define THREADS_PER_BLOCK 256
 
 void check_error(std::string s) {
@@ -27,7 +29,7 @@ void init_rank(int* rank, int node_cnt) {
     }
 }
 
-__global__ void jones_plassmann_kernel(int cur_color, int node_cnt, 
+__global__ void jones_plassmann_basic_kernel(int cur_color, int node_cnt, 
     int* colors, int *nbrs_start, int *nbrs, int* rank) {
     int node = blockIdx.x * blockDim.x + threadIdx.x;
     // already colored, skip
@@ -45,7 +47,7 @@ __global__ void jones_plassmann_kernel(int cur_color, int node_cnt,
     if (is_max) colors[node] = cur_color;
 }
 
-void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs) {
+void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode) {
     // initialization
     int num_blocks = (node_cnt + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int* rank = (int*)malloc(sizeof(int) * node_cnt); 
@@ -67,8 +69,12 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
     cudaMemcpy(device_nbrs_start, nbrs_start, sizeof(int) * (node_cnt + 1), cudaMemcpyHostToDevice);
 
     for (int cur_color = 1; cur_color <= node_cnt; ++cur_color) {
-        jones_plassmann_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
-            (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, device_rank);
+        switch (mode) {
+            case Basic:
+                jones_plassmann_basic_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
+                (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, device_rank);
+                break;                
+        }
         cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
         int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
         if (uncolored == 0) break;
