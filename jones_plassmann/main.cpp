@@ -62,13 +62,13 @@ int main(int argc, char *argv[]) {
             mode = optarg;
             break;
         default:
-            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash]\n";
+            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash/basicopt]\n";
             exit(EXIT_FAILURE);
         }
     }
     // Check if required options are provided
-    if (empty(input_filename) || (mode != "basic" && mode != "minmax" && mode != "multihash")) {
-        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash]\n";
+    if (empty(input_filename) || (mode != "basic" && mode != "minmax" && mode != "basicopt" && mode != "multihash")) {
+        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash/basicopt]\n";
         exit(EXIT_FAILURE);
     }
     std::cout << "Input File: " << input_filename << std::endl;
@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
     if (verbose) printCudaInfo();
     if (mode == "minmax") m = MinMax;
     if (mode == "multihash") m = MultiHash;
+    if (mode == "basicopt") m = BasicOpt;
     
     const auto compute_start = std::chrono::steady_clock::now();
 

@@ -29,6 +29,16 @@ void init_rank(int* rank, int node_cnt) {
     }
 }
 
+
+// instead of precomputing random numbers, use a hash function to compute priority on the fly
+// source: https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key (could find better candidates)
+__device__ inline int hash(int x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
+}
+
 __global__ void jones_plassmann_basic_kernel(int cur_color, int node_cnt, 
     int* colors, int *nbrs_start, int *nbrs, int* rank) {
     int node = blockIdx.x * blockDim.x + threadIdx.x;
@@ -43,6 +53,24 @@ __global__ void jones_plassmann_basic_kernel(int cur_color, int node_cnt,
             continue;
         }
         if (rank[node] <= rank[nbr]) is_max = false;
+    }
+    if (is_max) colors[node] = cur_color;
+}
+
+__global__ void jones_plassmann_basic_kernel_hash(int cur_color, int node_cnt, 
+    int* colors, int *nbrs_start, int *nbrs) {
+    int node = blockIdx.x * blockDim.x + threadIdx.x;
+    // already colored, skip
+    if (node >= node_cnt || colors[node] != 0) return;
+    int my_hash = hash(node);
+    bool is_max = true;
+    for (int nbr_idx = nbrs_start[node]; nbr_idx < nbrs_start[node + 1]; ++nbr_idx) {
+        int nbr = nbrs[nbr_idx];
+        // ignore colored neighbor
+        if (colors[nbr] != 0 && colors[nbr] != cur_color) {
+            continue;
+        }
+        if (my_hash <= hash(nbr)) is_max = false;
     }
     if (is_max) colors[node] = cur_color;
 }
@@ -62,11 +90,35 @@ __global__ void jones_plassmann_minmax_kernel(int cur_color, int node_cnt,
             continue;
         }
         if (rank[node] <= rank[nbr]) is_max = false;
+
         if (rank[node] >= rank[nbr]) is_min = false;
     }
     if (is_max) colors[node] = cur_color;
     if (is_min) colors[node] = cur_color + 1;
 }
+
+__global__ void jones_plassmann_multihash_kernel(int cur_color, int node_cnt, 
+    int* colors, int *nbrs_start, int *nbrs) {
+    int node = blockIdx.x * blockDim.x + threadIdx.x;
+    // already colored, skip
+    if (node >= node_cnt || colors[node] != 0) return;
+    int my_hash = hash(node);
+    int my_hash2 = hash(my_hash);
+    bool is_max = true;
+    bool is_max2 = true;
+    for (int nbr_idx = nbrs_start[node]; nbr_idx < nbrs_start[node + 1]; ++nbr_idx) {
+        int nbr = nbrs[nbr_idx];
+        // ignore colored neighbor
+        if (colors[nbr] != 0 && colors[nbr] != cur_color && colors[nbr] != cur_color + 1) {
+            continue;
+        }
+        if (my_hash <= hash(nbr)) is_max = false;
+        if (my_hash2 >= hash(hash(nbr))) is_max2 = false;
+    }
+    if (is_max) colors[node] = cur_color;
+    if (is_max2) colors[node] = cur_color + 1;
+}
+
 
 void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode) {
     // initialization
@@ -110,7 +162,22 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
             }
             break;
         case MultiHash:
-            // TODO
+            for (int cur_color = 1; cur_color <= 2 * node_cnt; cur_color += 2) {
+                    jones_plassmann_multihash_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
+                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs);
+                    cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
+                int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
+                if (uncolored == 0) break;
+            }
+            break;
+        case BasicOpt:
+            for (int cur_color = 1; cur_color <= node_cnt; ++cur_color) {
+                    jones_plassmann_basic_kernel_hash<<<num_blocks, THREADS_PER_BLOCK>>>
+                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs);
+                    cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
+                int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
+                if (uncolored == 0) break;
+            }
             break;
         default:
             printf("\033[1;31m ERROR: Unrecognized coloring mode!\033[0m\n");
