@@ -10,10 +10,11 @@
 #include <thrust/count.h>
 
 #include "mode.h"
+#include "predictor.cpp"
 
 #define THREADS_PER_BLOCK 256
-#define HASH_CNT 8
-#define MAX_HASH_CNT 8
+#define INIT_HASH_CNT 8
+#define MAX_HASH_CNT 32
 
 void check_error(std::string s) {
     cudaError_t errCode = cudaPeekAtLastError();
@@ -173,14 +174,17 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
             }
             break;
         case MultiHash:
-            for (int cur_color = 1; cur_color <= HASH_CNT * node_cnt; cur_color += HASH_CNT) {
-                    jones_plassmann_multihash_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
-                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, HASH_CNT);
-                    cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
-                int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
-                if (uncolored == 0) break;
+            {
+                int hash_cnt = INIT_HASH_CNT;
+                for (int cur_color = 1; cur_color <= hash_cnt * node_cnt; cur_color += hash_cnt) {
+                        jones_plassmann_multihash_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
+                        (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, hash_cnt);
+                        cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
+                    int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
+                    if (uncolored == 0) break;
+                }
+                break;
             }
-            break;
         case BasicOpt:
             for (int cur_color = 1; cur_color <= node_cnt; ++cur_color) {
                     jones_plassmann_basic_kernel_hash<<<num_blocks, THREADS_PER_BLOCK>>>
