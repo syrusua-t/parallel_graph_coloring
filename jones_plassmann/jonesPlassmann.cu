@@ -12,6 +12,8 @@
 #include "mode.h"
 
 #define THREADS_PER_BLOCK 256
+#define HASH_CNT 8
+#define MAX_HASH_CNT 8
 
 void check_error(std::string s) {
     cudaError_t errCode = cudaPeekAtLastError();
@@ -98,25 +100,34 @@ __global__ void jones_plassmann_minmax_kernel(int cur_color, int node_cnt,
 }
 
 __global__ void jones_plassmann_multihash_kernel(int cur_color, int node_cnt, 
-    int* colors, int *nbrs_start, int *nbrs) {
+    int* colors, int *nbrs_start, int *nbrs, int hash_cnt) {
     int node = blockIdx.x * blockDim.x + threadIdx.x;
     // already colored, skip
     if (node >= node_cnt || colors[node] != 0) return;
-    int my_hash = hash(node);
-    int my_hash2 = hash(my_hash);
-    bool is_max = true;
-    bool is_max2 = true;
+    bool is_max[MAX_HASH_CNT];
+    for (int i = 0; i < hash_cnt; ++i) {
+        is_max[i] = true;
+    }
     for (int nbr_idx = nbrs_start[node]; nbr_idx < nbrs_start[node + 1]; ++nbr_idx) {
         int nbr = nbrs[nbr_idx];
         // ignore colored neighbor
-        if (colors[nbr] != 0 && colors[nbr] != cur_color && colors[nbr] != cur_color + 1) {
+        if (colors[nbr] != 0 && colors[nbr] < cur_color) {
             continue;
         }
-        if (my_hash <= hash(nbr)) is_max = false;
-        if (my_hash2 >= hash(hash(nbr))) is_max2 = false;
+        int nbr_hash = hash(nbr);
+        int my_hash = hash(node);
+        for (int i = 0; i < hash_cnt; ++i) {
+            if (my_hash <= nbr_hash) is_max[i] = false;
+            nbr_hash = hash(nbr_hash);
+            my_hash = hash(my_hash);
+        }
     }
-    if (is_max) colors[node] = cur_color;
-    if (is_max2) colors[node] = cur_color + 1;
+    for (int i = 0; i < hash_cnt; ++i) {
+        if (is_max[i]) {
+            colors[node] = cur_color + i;
+            break;
+        }
+    }
 }
 
 
@@ -162,9 +173,9 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
             }
             break;
         case MultiHash:
-            for (int cur_color = 1; cur_color <= 2 * node_cnt; cur_color += 2) {
+            for (int cur_color = 1; cur_color <= HASH_CNT * node_cnt; cur_color += HASH_CNT) {
                     jones_plassmann_multihash_kernel<<<num_blocks, THREADS_PER_BLOCK>>>
-                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs);
+                    (cur_color, node_cnt, device_colors, device_nbrs_start, device_nbrs, HASH_CNT);
                     cudaMemcpy(colors, device_colors, sizeof(int) * node_cnt, cudaMemcpyDeviceToHost);
                 int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
                 if (uncolored == 0) break;
