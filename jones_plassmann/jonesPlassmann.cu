@@ -193,6 +193,7 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
                     predictor.update_hash_cnt(hash_util);
                     hash_cnt = predictor.get_hash_cnt();
                 }
+                predictor.write_output();
                 break;
             }
         case BasicOpt:

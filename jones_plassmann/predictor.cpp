@@ -2,6 +2,11 @@
 #define INIT_HASH_CNT 4
 #define MAX_HASH_CNT 4096
 
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 enum strategy {
     MINIMUM,
     MAXIMUM,
@@ -28,6 +33,7 @@ public:
     }
 
     void update_hash_cnt(float hash_util) {
+        utils_.push_back(hash_util);
         int hash_cnt = hash_cnt_;
         switch (stg_) {
             case DOUBLE:
@@ -48,6 +54,17 @@ public:
         }
     }
 
+    void write_output() {
+        std::ofstream out_file("../outputs/output_visualize.txt", std::fstream::out);
+        if (!out_file) {
+            std::cerr << "\033[1;31mUnable to open file for output: visualization" << "\033[0m\n";
+            exit(EXIT_FAILURE);
+        }
+        for (float u : utils_) {
+            out_file << u * 100.0f << "\n";
+        }
+    }
+
 private:
     strategy stg_;
     int edge_cnt_;
@@ -57,4 +74,5 @@ private:
     int hash_cnt_;
 
     const float util_limit_double = 0.01f;
+    std::vector<float> utils_;
 };

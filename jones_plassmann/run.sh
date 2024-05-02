@@ -11,3 +11,4 @@ echo "==========result=========="
 python3 ../validate/validate.py -i $input -c $output
 echo "=========================="
 echo ""
+python3 ../outputs/visualize.py

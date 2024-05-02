@@ -1,5 +1,6 @@
 /inputs/*.txt
 /outputs/*.txt
+/outputs/*.png
 *.o
 ompbfs
 cudajp
