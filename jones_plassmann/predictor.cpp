@@ -4,7 +4,8 @@
 
 enum strategy {
     CONSTANT,
-    DOUBLE
+    DOUBLE,
+    LINEAR4,
 };
 
 class Predictor {
@@ -28,8 +29,13 @@ public:
             case CONSTANT:
                 break;
             case DOUBLE:
-                if (hash_util < util_limit_double && hash_cnt_ * 2 <= MAX_HASH_CNT) {
+                if (hash_util > util_limit_double && hash_cnt_ * 2 <= MAX_HASH_CNT) {
                     hash_cnt_ *= 2;
+                }
+                break;
+            case LINEAR4:
+                if (hash_util > util_limit_double && hash_cnt_ + 4 <= MAX_HASH_CNT) {
+                    hash_cnt_ += 4;
                 }
                 break;
             default:
@@ -48,5 +54,5 @@ private:
     bool verbose_;
     int hash_cnt_;
 
-    const float util_limit_double = 0.3f;
+    const float util_limit_double = 0.01f;
 };

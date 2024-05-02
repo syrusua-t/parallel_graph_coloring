@@ -2,8 +2,8 @@
 
 if __name__ == "__main__":
     # Define the parameters
-    NAME = "clique3000"
-    num_nodes = 3000
+    NAME = "clique4000"
+    num_nodes = 4000
     num_edges = num_nodes * (num_nodes - 1)
 
     with open(f"{NAME}.txt", "w") as file:
