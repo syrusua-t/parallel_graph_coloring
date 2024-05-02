@@ -4,6 +4,7 @@
 
 enum strategy {
     CONSTANT,
+    MAXIMUM,
     DOUBLE,
     LINEAR4,
 };
@@ -13,6 +14,9 @@ public:
     Predictor(strategy stg, int edge_cnt, int node_cnt, bool verbose = false) : stg_(stg), 
         edge_cnt_(edge_cnt), node_cnt_(node_cnt), verbose_(verbose) {
         switch (stg_) {
+            case MAXIMUM:
+                hash_cnt_ = MAX_HASH_CNT;
+                break;
             default:
                 hash_cnt_ = INIT_HASH_CNT;
                 break;
@@ -42,7 +46,7 @@ public:
                 break;
         }
         if (verbose_) {
-            printf("Iteration[%d]: hash utilization = %f, hash_cnt: %d -> %d\n", it_++, hash_util, hash_cnt, hash_cnt_);
+            printf("Iteration[%d]: hash util = %.2f%%, hash_cnt: %d -> %d\n", it_++, hash_util * 100.0f, hash_cnt, hash_cnt_);
         }
     }
 
