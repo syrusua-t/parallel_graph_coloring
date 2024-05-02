@@ -3,7 +3,7 @@
 #define MAX_HASH_CNT 4096
 
 enum strategy {
-    CONSTANT,
+    MINIMUM,
     MAXIMUM,
     DOUBLE,
     LINEAR4,
@@ -30,8 +30,6 @@ public:
     void update_hash_cnt(float hash_util) {
         int hash_cnt = hash_cnt_;
         switch (stg_) {
-            case CONSTANT:
-                break;
             case DOUBLE:
                 if (hash_util > util_limit_double && hash_cnt_ * 2 <= MAX_HASH_CNT) {
                     hash_cnt_ *= 2;

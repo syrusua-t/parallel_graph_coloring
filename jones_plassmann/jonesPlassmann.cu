@@ -128,7 +128,8 @@ __global__ void jones_plassmann_multihash_kernel(int cur_color, int node_cnt,
 }
 
 
-void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode, bool verbose) {
+void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode, bool verbose,
+    std::string stg) {
     // initialization
     int num_blocks = (node_cnt + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int* rank = (int*)malloc(sizeof(int) * node_cnt); 
@@ -172,7 +173,15 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
         case MultiHash:
             {
                 int prev_uncolored = node_cnt;
-                Predictor predictor(DOUBLE, edge_cnt, node_cnt, verbose);
+                strategy stgy = MINIMUM;
+                if (stg == "maximum") {
+                    stgy = MAXIMUM;
+                } else if (stg == "double") {
+                    stgy = DOUBLE;
+                } else if (stg == "linear4") {
+                    stgy = LINEAR4;
+                }
+                Predictor predictor(stgy, edge_cnt, node_cnt, verbose);
                 int hash_cnt = predictor.get_hash_cnt();
                 for (int cur_color = 1; cur_color <= hash_cnt * node_cnt; cur_color += hash_cnt) {
                     jones_plassmann_multihash_kernel<<<num_blocks, THREADS_PER_BLOCK>>>

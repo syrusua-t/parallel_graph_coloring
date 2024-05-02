@@ -13,7 +13,8 @@
 
 #include "mode.h"
 
-void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode, bool verbose);
+void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, int *nbrs, Mode mode, bool verbose,
+    std::string strategy);
 void printCudaInfo();
 
 
@@ -44,10 +45,11 @@ void write_output(const std::string& output_filename, int* colors, size_t num_co
 int main(int argc, char *argv[]) {
     std::string input_filename;
     std::string output_filename;
+    std::string strategy = "minimum";
     std::string mode = "basic";
     bool verbose = false;
     int opt;
-    while ((opt = getopt(argc, argv, "f:o:vm:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:o:vm:s:")) != -1) {
         switch (opt) {
         case 'f':
             input_filename = optarg;
@@ -61,14 +63,18 @@ int main(int argc, char *argv[]) {
         case 'm':
             mode = optarg;
             break;
+        case 's':
+            strategy = optarg;
+            break;
         default:
-            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash/basicopt]\n";
+            std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash/basicopt] -s strategy[minimum/maximum/double/linear4]\n";
             exit(EXIT_FAILURE);
         }
     }
     // Check if required options are provided
-    if (empty(input_filename) || (mode != "basic" && mode != "minmax" && mode != "basicopt" && mode != "multihash")) {
-        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash/basicopt]\n";
+    if (empty(input_filename) || (mode != "basic" && mode != "minmax" && mode != "basicopt" && mode != "multihash") ||
+        (strategy != "minimum" && strategy != "maximum" && strategy != "double" && strategy != "linear4")) {
+        std::cerr << "Usage: " << argv[0] << " -f input_filename -o output (-v) -m mode[basic/minmax/multihash/basicopt] -s strategy[minimum/maximum/double/linear4]\n";
         exit(EXIT_FAILURE);
     }
     std::cout << "Input File: " << input_filename << std::endl;
@@ -110,6 +116,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Number of nodes: " << node_cnt << std::endl;
     std::cout << "Number of edges: " << edge_cnt << std::endl;
     std::cout << "Coloring mode: \u001b[35m\u001b[1m" << mode << "\033[0m" << std::endl;
+    std::cout << "Strategy: \u001b[35m\u001b[1m" << strategy << "\033[0m" << std::endl;
 
     // extract edges
     std::vector<std::vector<int>> graph(node_cnt);
@@ -136,7 +143,7 @@ int main(int argc, char *argv[]) {
     
     const auto compute_start = std::chrono::steady_clock::now();
 
-    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, m, verbose);
+    jones_plassmann(node_cnt, edge_cnt, colors, nbrs_start, nbrs, m, verbose, strategy);
 
     const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - compute_start).count();
