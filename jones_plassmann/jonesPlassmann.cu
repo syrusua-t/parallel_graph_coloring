@@ -101,7 +101,10 @@ __global__ void jones_plassmann_multihash_kernel(int cur_color, int node_cnt,
     int node = blockIdx.x * blockDim.x + threadIdx.x;
     // already colored, skip
     if (node >= node_cnt || colors[node] != 0) return;
-    long is_max = -1;
+    bool is_max[MAX_HASH_CNT];
+    for (int i = 0; i < hash_cnt; ++i) {
+        is_max[i] = true;
+    }
     for (int nbr_idx = nbrs_start[node]; nbr_idx < nbrs_start[node + 1]; ++nbr_idx) {
         int nbr = nbrs[nbr_idx];
         // ignore colored neighbor
@@ -111,14 +114,13 @@ __global__ void jones_plassmann_multihash_kernel(int cur_color, int node_cnt,
         int nbr_hash = hash(nbr);
         int my_hash = hash(node);
         for (int i = 0; i < hash_cnt; ++i) {
-            if (my_hash <= nbr_hash) is_max = is_max & (~(1 << i));
+            if (my_hash <= nbr_hash) is_max[i] = false;
             nbr_hash = hash(nbr_hash);
             my_hash = hash(my_hash);
         }
     }
-    long mask = 1;
     for (int i = 0; i < hash_cnt; ++i) {
-        if (is_max & (mask << i)) {
+        if (is_max[i]) {
             colors[node] = cur_color + i;
             break;
         }

@@ -1,6 +1,6 @@
 #define THREADS_PER_BLOCK 256
 #define INIT_HASH_CNT 4
-#define MAX_HASH_CNT 64
+#define MAX_HASH_CNT 4096
 
 enum strategy {
     CONSTANT,
