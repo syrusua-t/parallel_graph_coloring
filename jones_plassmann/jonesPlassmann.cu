@@ -190,7 +190,7 @@ void jones_plassmann(int node_cnt, int edge_cnt, int* colors, int *nbrs_start, i
                     int uncolored = (int)thrust::count(colors, colors + node_cnt, 0);
                     if (uncolored == 0) break;
                     float hash_util = ((float)prev_uncolored - uncolored)/(hash_cnt * (float)prev_uncolored);
-                    predictor.update_hash_cnt(hash_util);
+                    predictor.update_hash_cnt(uncolored, hash_util);
                     hash_cnt = predictor.get_hash_cnt();
                 }
                 predictor.write_output();

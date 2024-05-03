@@ -32,8 +32,9 @@ public:
         return hash_cnt_;
     }
 
-    void update_hash_cnt(float hash_util) {
+    void update_hash_cnt(int uncolored, float hash_util) {
         utils_.push_back(hash_util);
+        colored_.push_back((float)(node_cnt_ - uncolored) / (float)node_cnt_);
         int hash_cnt = hash_cnt_;
         switch (stg_) {
             case DOUBLE:
@@ -60,8 +61,8 @@ public:
             std::cerr << "\033[1;31mUnable to open file for output: visualization" << "\033[0m\n";
             exit(EXIT_FAILURE);
         }
-        for (float u : utils_) {
-            out_file << u * 100.0f << "\n";
+        for (int i = 0; i < utils_.size(); ++i) {
+            out_file << utils_[i] * 100.0f << " " << colored_[i] * 100.0f << "\n";
         }
     }
 
@@ -75,4 +76,5 @@ private:
 
     const float util_limit_double = 0.01f;
     std::vector<float> utils_;
+    std::vector<float> colored_;
 };
