@@ -34,7 +34,8 @@ public:
 
     void update_hash_cnt(int uncolored, float hash_util) {
         utils_.push_back(hash_util);
-        colored_.push_back((float)(node_cnt_ - uncolored) / (float)node_cnt_);
+        float progress = (float)(node_cnt_ - uncolored) / (float)node_cnt_;
+        colored_.push_back(progress);
         int hash_cnt = hash_cnt_;
         switch (stg_) {
             case DOUBLE:
@@ -51,7 +52,7 @@ public:
                 break;
         }
         if (verbose_) {
-            printf("Iteration[%d]: hash util = %.2f%%, hash_cnt: %d -> %d\n", it_++, hash_util * 100.0f, hash_cnt, hash_cnt_);
+            printf("[%d]: hash util = %.2f%%, hash_cnt: %d -> %d, progress: %.2f%%\n", it_++, hash_util * 100.0f, hash_cnt, hash_cnt_, progress * 100.0f);
         }
     }
 
