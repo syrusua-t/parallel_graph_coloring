@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_data(filename):
     with open(filename, 'r') as file:
@@ -8,13 +9,16 @@ def plot_data(filename):
             parts = line.strip().split()
             if len(parts) == 2:
                 util, prog = map(float, parts)
-                utils.append(util * 100)
+                utils.append(util)
                 progs.append(prog)
+
+        mx = np.max(utils)
+        utils = utils / mx * 100
 
     it = list(range(1, len(utils) + 1))
 
     plt.figure(figsize=(8, 5))
-    plt.bar(it, utils, label='hash util score', color='royalblue', width=1)
+    plt.bar(it, utils, label='hash util (divided by max)', color='royalblue', width=1)
     it.insert(0, 0)
     progs.insert(0, 0)
     plt.plot(it, progs, label='Coloring progress', linestyle='-', color='red')
